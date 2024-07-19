@@ -24,30 +24,27 @@ const Home = () => {
       body: JSON.stringify(newMessages), // Send messages to the backend
     });
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-
-    let receivedText = '';
-
-    // Process the streamed response
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      receivedText += decoder.decode(value, { stream: true });
-      setMessages((prevMessages) => [
-        ...prevMessages.slice(0, -1),
-        { role: 'assistant', content: receivedText },
-      ]);
+    if (!response.ok) {
+      // Handle error response
+      console.error('Error fetching response from backend');
+      setIsLoading(false);
+      return;
     }
+
+    const data = await response.json();
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { role: 'assistant', content: data.content },
+    ]);
 
     setIsLoading(false); // Reset loading state
   };
 
   return (
-    <div className="flex flex-col items-center p-4">
-      <div className="w-full max-w-md border rounded-lg p-4">
-        {/* Display chat messages */}
-        <div className="overflow-y-auto max-h-80 mb-4">
+    <div className="flex flex-col h-screen p-4">
+      {/* Chat container */}
+      <div className="flex flex-col flex-grow overflow-hidden">
+        <div className="flex-grow overflow-y-auto mb-4">
           {messages.map((msg, index) => (
             <div key={index} className={`mb-2 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
               <span className={`px-3 py-2 rounded-lg inline-block ${msg.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
@@ -59,10 +56,10 @@ const Home = () => {
         </div>
         
         {/* Input and Send button */}
-        <div className="flex items-center">
+        <div className="flex items-center space-x-2 mt-auto">
           <input
             type="text"
-            className="border rounded-lg px-4 py-2 flex-1 mr-2"
+            className="border rounded-lg px-4 py-2 flex-1"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Type your message..."
